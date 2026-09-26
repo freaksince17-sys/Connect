@@ -25,12 +25,32 @@ export interface InstagramShowcaseProps {
 
 export const getInstagramShortcode = (url?: string): string | null => {
   if (!url) return null;
-  const match = url.match(/(?:reel|p)\/([A-Za-z0-9_-]+)/);
+  const match = url.match(/(?:reel|p|tv)\/([A-Za-z0-9_-]+)/);
   return match ? match[1] : null;
 };
 
-const isDirectVideo = (u?: string) => 
-  Boolean(u && (u.endsWith('.mp4') || u.endsWith('.webm') || u.startsWith('data:video') || u.startsWith('blob:') || u.includes('/tiktok_videos/')));
+const getInstagramEmbedUrl = (url?: string): string | null => {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (!['instagram.com', 'www.instagram.com'].includes(parsed.hostname)) return null;
+    const match = parsed.pathname.match(/^\/(reel|p|tv)\/([A-Za-z0-9_-]+)\/?$/);
+    if (!match) return null;
+    return `https://www.instagram.com/${match[1]}/${match[2]}/embed/`;
+  } catch {
+    return null;
+  }
+};
+
+const isDirectVideo = (u?: string) => {
+  if (!u || u.includes('/tiktok_videos/')) return false;
+  if (u.startsWith('data:video') || u.startsWith('blob:')) return true;
+  try {
+    return /\.(mp4|webm|mov)$/i.test(new URL(u, 'https://local.invalid').pathname);
+  } catch {
+    return false;
+  }
+};
 
 interface InstagramJournalCardProps {
   item: InstagramJournalItem;
@@ -64,7 +84,7 @@ const InstagramJournalCard: React.FC<InstagramJournalCardProps> = ({
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const shortcode = getInstagramShortcode(item.postUrl);
-  const playableVideo = isDirectVideo(item.videoUrl) ? item.videoUrl : '/tiktok_videos/7363984155060817160.mp4';
+  const playableVideo = isDirectVideo(item.videoUrl) ? item.videoUrl : null;
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -120,19 +140,23 @@ const InstagramJournalCard: React.FC<InstagramJournalCardProps> = ({
       title="Single click to view details • Double-click to open on Instagram"
     >
       {/* 1. Underlying Cover Photo Thumbnail */}
-      <img
-        src={item.thumbnail}
-        alt={item.title}
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80';
-        }}
-        className={`w-full h-full object-cover transition-transform duration-700 ${
-          isHovered ? 'scale-105 opacity-40' : 'opacity-100 group-hover:scale-105'
-        }`}
-      />
+      {item.thumbnail ? (
+        <img
+          src={item.thumbnail}
+          alt={item.title}
+          className={`w-full h-full object-cover transition-transform duration-700 ${
+            isHovered ? 'scale-105 opacity-40' : 'opacity-100 group-hover:scale-105'
+          }`}
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#392631] via-[#8f365c] to-[#e1a35b] text-white">
+          <Instagram className="w-10 h-10" />
+          <span className="px-4 text-center text-xs font-medium">Tap to play this Instagram post</span>
+        </div>
+      )}
 
       {/* 2. Hover Auto-Playing Video: Guaranteed native HTML5 playback */}
-      <video
+      {playableVideo && <video
         ref={videoRef}
         src={playableVideo}
         muted
@@ -142,20 +166,20 @@ const InstagramJournalCard: React.FC<InstagramJournalCardProps> = ({
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
           isHovered ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'
         }`}
-      />
+      />}
 
       {/* 3. Dark Vignette Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/35 pointer-events-none z-10" />
 
       {/* 4. Active Reel Playing Pill on Hover */}
-      <div 
+      {playableVideo && <div
         className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold transition-all duration-300 ${
           isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none'
         }`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
         <span>Playing Reel</span>
-      </div>
+      </div>}
 
       {/* 5. Instagram Logo Badge & Seller Studio Controls */}
       <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
@@ -459,13 +483,12 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
               title="Double click to open on Instagram"
             >
               {(() => {
-                const modalVideoSrc = isDirectVideo(activeItem.videoUrl) 
-                  ? activeItem.videoUrl 
-                  : (activeItem.videoUrl && (activeItem.videoUrl.startsWith('http') || activeItem.videoUrl.startsWith('/')) ? activeItem.videoUrl : '/tiktok_videos/7363984155060817160.mp4');
+                const modalVideoSrc = isDirectVideo(activeItem.videoUrl) ? activeItem.videoUrl : null;
+                const instagramEmbedUrl = getInstagramEmbedUrl(activeItem.postUrl);
 
                 return (
                   <div className="relative w-full h-full min-h-[360px] sm:min-h-[420px] flex items-center justify-center bg-black overflow-hidden">
-                    <video
+                    {modalVideoSrc ? <video
                       ref={modalVideoRef}
                       key={modalVideoSrc}
                       src={modalVideoSrc}
@@ -477,10 +500,20 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                       className="w-full h-full object-cover max-h-[550px]"
                       onPlay={() => setIsModalPlaying(true)}
                       onPause={() => setIsModalPlaying(false)}
-                    />
+                    /> : instagramEmbedUrl ? (
+                      <iframe
+                        src={instagramEmbedUrl}
+                        title={`Instagram post ${getInstagramShortcode(activeItem.postUrl) || ''}`}
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="h-full min-h-[420px] w-full border-0 bg-white"
+                      />
+                    ) : (
+                      <div className="p-6 text-center text-sm text-white/70">This Instagram post has no playable embed.</div>
+                    )}
                     
                     {/* Audio Toggle & Play Controls Overlay */}
-                    <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
+                    {modalVideoSrc && <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -512,7 +545,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                       >
                         {isModalPlaying ? <span>Pause</span> : <><Play className="w-3 h-3 fill-white" /> <span>Play</span></>}
                       </button>
-                    </div>
+                    </div>}
 
                     {/* Double click hint badge */}
                     <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] text-white/90 border border-white/10 pointer-events-none">
