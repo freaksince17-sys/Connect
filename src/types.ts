@@ -111,6 +111,7 @@ export interface InstagramJournalItem {
   handle?: string;
   caption: string;
   thumbnail: string;
+  videoUrl?: string;
   postUrl: string;
   likes?: string;
   views?: string;

@@ -81,7 +81,7 @@ export const OrderTrackerModal: React.FC = () => {
   const openWhatsAppInquiry = (order: TrackedOrderData) => {
     const phone = '9779801234567';
     const text = encodeURIComponent(
-      `Namaste Artified Studio! ✨ I am checking the status of my order ${order.orderId} (${order.items.map((i) => i.title).join(', ')}). Could you provide a quick update on production/dispatch? Dhanyabad!`
+      `Namaste Artified Store! ✨ I am checking the status of my order ${order.orderId} (${order.items.map((i) => i.title).join(', ')}). Could you provide a quick update on production/dispatch? Dhanyabad!`
     );
     window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
   };
@@ -110,7 +110,7 @@ export const OrderTrackerModal: React.FC = () => {
                 Handmade Order & Craft Tracker
               </h2>
               <p className="text-[10px] text-[#8C7A6B] uppercase tracking-wider font-medium">
-                Live Craft Progress • Patan Studio & Valley Dispatch
+                Live Craft Progress • Chikamugal Store & Valley Dispatch
               </p>
             </div>
           </div>
@@ -407,7 +407,7 @@ export const OrderTrackerModal: React.FC = () => {
                 <div className="flex items-center gap-2.5 text-center sm:text-left">
                   <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0" />
                   <p className="text-emerald-900 leading-tight">
-                    Need live progress photos or have custom dimension questions? Chat with our Patan studio lead.
+                    Need live progress photos or have custom dimension questions? Chat with our Chikamugal store team.
                   </p>
                 </div>
 
@@ -417,7 +417,7 @@ export const OrderTrackerModal: React.FC = () => {
                   className="px-4 py-2.5 bg-[#25D366] text-white rounded-xl font-semibold text-xs uppercase tracking-wider hover:bg-[#20ba5a] transition-all flex items-center gap-1.5 shrink-0 shadow-xs"
                 >
                   <MessageCircle className="w-4 h-4" />
-                  <span>WhatsApp Studio Support</span>
+                  <span>WhatsApp Store Support</span>
                 </button>
               </div>
 

@@ -58,7 +58,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 5,
       date: '3 days ago',
       verified: true,
-      comment: 'Visited their Chikamugal studio in Kathmandu to see the pearl bags in person. The beadwork on this handbag is incredibly rigid and sturdy, perfectly holds my iPhone Pro, lipstick, compact, and cards. Everyone at my cousin’s wedding reception at Soaltee asked where I got it!'
+      comment: 'Visited their Chikamugal store in Kathmandu to see the pearl bags in person. The beadwork on this handbag is incredibly rigid and sturdy, perfectly holds my iPhone Pro, lipstick, compact, and cards. Everyone at my cousin’s wedding reception at Soaltee asked where I got it!'
     },
     {
       id: 'maya-aurelia-pearl-bag-rev-2',
@@ -92,11 +92,11 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
     {
       id: 'lalitpur-bloom-pearl-tote-rev-1',
       author: 'Dikshya Tuladhar',
-      location: 'Patan Durbar, Lalitpur',
+      location: 'Chikamugal, Kathmandu',
       rating: 5,
       date: '2 days ago',
       verified: true,
-      comment: 'Being from Patan, seeing our Newari wooden window floral lattices translated into delicate pearl beadwork blew my mind. Over 650 pearls intricately knotted with zero loose threads. Truly an artisanal masterpiece.'
+      comment: 'Being from Kathmandu, seeing our Newari wooden window floral lattices translated into delicate pearl beadwork blew my mind. Over 650 pearls intricately knotted with zero loose threads. Truly an artisanal masterpiece.'
     },
     {
       id: 'lalitpur-bloom-pearl-tote-rev-2',
@@ -123,7 +123,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 4.9,
       date: '1 month ago',
       verified: true,
-      comment: 'Arrived wrapped in delicate tissue paper with a handwritten thank-you note from the Patan makers. You can genuinely feel the patient hours woven into this heirloom piece. 100% recommended.'
+      comment: 'Arrived wrapped in delicate tissue paper with a handwritten thank-you note from the Chikamugal makers. You can genuinely feel the patient hours woven into this heirloom piece. 100% recommended.'
     }
   ],
   'chandra-baroque-pearl-choker': [
@@ -181,7 +181,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 5,
       date: '10 days ago',
       verified: true,
-      comment: 'Picked it up directly from the Chikamugal studio. The team adjusted the extension chain to my exact preferred neckline drop on the spot. Unmatched customer care in Nepal!'
+      comment: 'Picked it up directly from the Chikamugal store. The team adjusted the extension chain to my exact preferred neckline drop on the spot. Unmatched customer care in Nepal!'
     },
     {
       id: 'apsara-layered-pearl-collar-rev-3',
@@ -342,7 +342,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 4.8,
       date: '2 weeks ago',
       verified: true,
-      comment: 'Comb out the fringe lightly with a wide comb after unpacking and it hangs razor straight. Gets compliments every single time I wear it to Patan cafes.'
+      comment: 'Comb out the fringe lightly with a wide comb after unpacking and it hangs razor straight. Gets compliments every single time I wear it to cafes.'
     },
     {
       id: 'indra-macrame-fringe-crossbody-rev-4',
@@ -362,7 +362,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 5,
       date: '2 days ago',
       verified: true,
-      comment: 'Living near their Chikamugal studio, I saw how much care goes into building these rigid acrylic chassis clutches. It feels like solid architectural art in your hand. Absolutely top tier!'
+      comment: 'Living near their Chikamugal store, I saw how much care goes into building these rigid acrylic chassis clutches. It feels like solid architectural art in your hand. Absolutely top tier!'
     },
     {
       id: 'tara-micro-pearl-clutch-rev-2',
@@ -376,7 +376,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
     {
       id: 'tara-micro-pearl-clutch-rev-3',
       author: 'Lumanti Shrestha',
-      location: 'Mangalbazar, Patan',
+      location: 'Chikamugal, Kathmandu',
       rating: 5,
       date: '2 weeks ago',
       verified: true,
@@ -427,7 +427,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 4.9,
       date: '2 weeks ago',
       verified: true,
-      comment: 'Sturdy braided core that easily holds the weight of heavy smartphones. The Chikamugal studio packaged it in a lovely mini linen pouch with care instructions.'
+      comment: 'Sturdy braided core that easily holds the weight of heavy smartphones. The Chikamugal store packaged it in a lovely mini linen pouch with care instructions.'
     }
   ],
   'kathmandu-macrame-strap-accessory': [
@@ -465,7 +465,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
       rating: 5,
       date: '3 weeks ago',
       verified: true,
-      comment: 'Picked it up at the studio near Chikamugal. The artisans are so humble and talented. Beautiful neutral unbleached cotton that pairs with every neutral and earthy outfit.'
+      comment: 'Picked it up at the store in Chikamugal. The artisans are so humble and talented. Beautiful neutral unbleached cotton that pairs with every neutral and earthy outfit.'
     }
   ]
 };
@@ -473,7 +473,7 @@ export const PRODUCT_REVIEWS_MAP: Record<string, ProductReviewItem[]> = {
 // Additional pool of unique customers for newly created custom products so names are never repeated
 const UNIQUE_CUSTOMER_FALLBACK_POOL = [
   { author: 'Kabita Mainali', location: 'Jhamsikhel, Lalitpur' },
-  { author: 'Aayusha Bajracharya', location: 'Patan, Lalitpur' },
+  { author: 'Aayusha Bajracharya', location: 'Chikamugal, Kathmandu' },
   { author: 'Meera Tuladhar', location: 'Ason, Kathmandu' },
   { author: 'Sharmila KC', location: 'Old Baneshwor, Kathmandu' },
   { author: 'Sunita Joshi', location: 'Sundhara, Lalitpur' },
@@ -483,10 +483,36 @@ const UNIQUE_CUSTOMER_FALLBACK_POOL = [
 ];
 
 /**
+ * Sanitizes any review location and comment text to ensure no outdated 'Patan' or 'studio' references
+ * ever appear to customers.
+ */
+export function sanitizeReviewItem<T extends { location?: string; comment?: string }>(rev: T): T {
+  return {
+    ...rev,
+    location: rev.location
+      ? rev.location
+          .replace(/Patan\s*(?:Hospital|Durbar|Gate)?/gi, 'Chikamugal, Kathmandu')
+          .replace(/\bPatan\b/gi, 'Kathmandu')
+          .replace(/\bstudio\b/gi, 'store')
+          .replace(/\bStudio\b/g, 'Store')
+      : rev.location,
+    comment: rev.comment
+      ? rev.comment
+          .replace(/Patan\s*(?:Hospital|Durbar|Gate)?/gi, 'Chikamugal, Kathmandu')
+          .replace(/\bPatan\b/gi, 'Chikamugal, Kathmandu')
+          .replace(/\bstudio\b/gi, 'store')
+          .replace(/\bStudio\b/g, 'Store')
+      : rev.comment
+  };
+}
+
+/**
  * Curated authentic customer reviews for individual products in Nepal.
  * Guaranteed that customer names are never repeated across any product.
  */
 export function getProductReviews(product: Product): ProductReviewItem[] {
+  let list: ProductReviewItem[] = [];
+
   // 1. Direct match in curated map
   const curated = PRODUCT_REVIEWS_MAP[product.id];
   if (curated) {
@@ -502,51 +528,54 @@ export function getProductReviews(product: Product): ProductReviewItem[] {
       });
 
       if (userAdded.length > 0) {
-        return [...userAdded, ...curated];
+        list = [...userAdded, ...curated];
+      } else {
+        list = curated;
       }
+    } else {
+      list = curated;
     }
-    return curated;
+  } else if (product.customReviews && product.customReviews.length > 0) {
+    // 2. Custom product with explicit customReviews
+    list = product.customReviews;
+  } else {
+    // 3. Fallback for new custom pieces: generate 3 distinct reviews from the reserve pool
+    let seed = 0;
+    for (let i = 0; i < product.id.length; i++) {
+      seed = (seed * 31 + product.id.charCodeAt(i)) & 0xffffffff;
+    }
+    const startIndex = Math.abs(seed) % (UNIQUE_CUSTOMER_FALLBACK_POOL.length - 3);
+    
+    list = [
+      {
+        id: `${product.id}-rev-custom-1`,
+        author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex].author,
+        location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex].location,
+        rating: 5,
+        date: '4 days ago',
+        verified: true,
+        comment: `In love with this piece! Handcrafted quality is evident in every detail. Dispatched promptly from the Chikamugal Kathmandu store with safe packaging.`
+      },
+      {
+        id: `${product.id}-rev-custom-2`,
+        author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 1].author,
+        location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 1].location,
+        rating: 5,
+        date: '1 week ago',
+        verified: true,
+        comment: `Exceptional finishing and durability. Their 24-hr exchange policy and responsive WhatsApp team made the ordering experience seamless.`
+      },
+      {
+        id: `${product.id}-rev-custom-3`,
+        author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 2].author,
+        location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 2].location,
+        rating: 4.9,
+        date: '2 weeks ago',
+        verified: true,
+        comment: `Received so many compliments wearing this! Highly recommended homegrown brand in Nepal for authentic wearable craft.`
+      }
+    ];
   }
 
-  // 2. Custom product with explicit customReviews
-  if (product.customReviews && product.customReviews.length > 0) {
-    return product.customReviews;
-  }
-
-  // 3. Fallback for new custom pieces: generate 3 distinct reviews from the reserve pool
-  let seed = 0;
-  for (let i = 0; i < product.id.length; i++) {
-    seed = (seed * 31 + product.id.charCodeAt(i)) & 0xffffffff;
-  }
-  const startIndex = Math.abs(seed) % (UNIQUE_CUSTOMER_FALLBACK_POOL.length - 3);
-  
-  return [
-    {
-      id: `${product.id}-rev-custom-1`,
-      author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex].author,
-      location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex].location,
-      rating: 5,
-      date: '4 days ago',
-      verified: true,
-      comment: `In love with this piece! Handcrafted quality is evident in every detail. Dispatched promptly from the Chikamugal Kathmandu studio with safe packaging.`
-    },
-    {
-      id: `${product.id}-rev-custom-2`,
-      author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 1].author,
-      location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 1].location,
-      rating: 5,
-      date: '1 week ago',
-      verified: true,
-      comment: `Exceptional finishing and durability. Their 24-hr exchange policy and responsive WhatsApp team made the ordering experience seamless.`
-    },
-    {
-      id: `${product.id}-rev-custom-3`,
-      author: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 2].author,
-      location: UNIQUE_CUSTOMER_FALLBACK_POOL[startIndex + 2].location,
-      rating: 4.9,
-      date: '2 weeks ago',
-      verified: true,
-      comment: `Received so many compliments wearing this! Highly recommended homegrown brand in Nepal for authentic wearable craft.`
-    }
-  ];
+  return list.map(sanitizeReviewItem);
 }

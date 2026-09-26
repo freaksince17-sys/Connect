@@ -17,7 +17,7 @@ import { ProductCard } from './ProductCard';
 import { useCart } from '../context/CartContext';
 import { TESTIMONIALS } from '../data/products';
 import { Testimonial } from '../types';
-import { isProductBestSeller } from '../utils/productStats';
+import { isProductBestSeller, sanitizeReviewItem } from '../utils/productStats';
 
 type SortOption = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc';
 
@@ -54,10 +54,10 @@ export const ProductGrid: React.FC = () => {
       const saved = localStorage.getItem('artified_grid_reviews');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.map(sanitizeReviewItem);
       }
     } catch {}
-    return TESTIMONIALS;
+    return TESTIMONIALS.map(sanitizeReviewItem);
   });
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewAuthor, setReviewAuthor] = useState('');
@@ -317,7 +317,7 @@ export const ProductGrid: React.FC = () => {
             No handcrafted pieces matched
           </h3>
           <p className="text-xs text-[#736C65] mb-6">
-            We couldn't find any products matching your selection. Feel free to message our studio in Chikamugal, Kathmandu on WhatsApp or explore our full collection.
+            We couldn't find any products matching your selection. Feel free to message our store in Chikamugal, Kathmandu on WhatsApp or explore our full collection.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
@@ -336,7 +336,7 @@ export const ProductGrid: React.FC = () => {
               className="px-5 py-2.5 bg-[#1C1B1A] text-white text-xs font-semibold uppercase tracking-wider rounded-full hover:bg-[#34312F] inline-flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#C5A880]" />
-              <span>Ask Chikamugal Studio</span>
+              <span>Ask Chikamugal Store</span>
             </a>
           </div>
         </div>
@@ -401,7 +401,7 @@ export const ProductGrid: React.FC = () => {
               Loved Across Nepal • Customer Reviews
             </h2>
             <p className="text-xs text-[#736C65] mt-1 max-w-xl">
-              Handcrafted with pride at our studio in <strong>Chikamugal, Kathmandu</strong>. Every delivery includes an authentic artisan check with our <strong>easy exchange within 24 hrs</strong> policy.
+              Handcrafted with pride at our store in <strong>Chikamugal, Kathmandu</strong>. Every delivery includes an authentic artisan check with our <strong>easy exchange within 24 hrs</strong> policy.
             </p>
           </div>
 
@@ -565,7 +565,7 @@ export const ProductGrid: React.FC = () => {
         <div className="mt-5 p-3.5 bg-white/80 rounded-xl border border-[#E8DFD8] flex items-center justify-between text-xs text-[#5E5955] flex-wrap gap-2.5">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#D4AF37]" />
-            <span>Store Studio: <strong>Chikamugal, Kathmandu, Nepal</strong></span>
+            <span>Store: <strong>Chikamugal, Kathmandu, Nepal</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <RotateCcw className="w-4 h-4 text-emerald-600" />

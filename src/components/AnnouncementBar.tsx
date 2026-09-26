@@ -15,7 +15,7 @@ export const AnnouncementBar: React.FC = () => {
         {/* Region pill */}
         <div className="hidden sm:flex items-center gap-1.5 text-[#C5A880] tracking-wider uppercase text-[9px] sm:text-[10px]">
           <MapPin className="w-3 h-3 text-[#D4AF37]" />
-          <span>Studio: Chikamugal, Kathmandu</span>
+          <span>Store: Chikamugal, Kathmandu</span>
         </div>
 
         {/* Central message */}

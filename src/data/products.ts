@@ -116,7 +116,7 @@ export const PRODUCTS: Product[] = [
     ],
     dimensions: '21cm (L) × 16cm (H) × 7cm (W) • Top handle: 10cm',
     weight: '440g',
-    description: 'Inspired by traditional Newari wood-carved floral lattices found across Patan Durbar Square, the Lalitpur Bloom combines geometric discipline with romantic fluidity. Each bag requires over 650 hand-threaded pearls positioned in interlocking rosette clusters.',
+    description: 'Inspired by traditional Newari wood-carved floral lattices found across Kathmandu Durbar Square, the Lalitpur Bloom combines geometric discipline with romantic fluidity. Each bag requires over 650 hand-threaded pearls positioned in interlocking rosette clusters.',
     stylingTip: 'Complements festive lehengas, pastel kurta sets, and minimalist summer sundresses alike.',
     careNotes: [
       'Keep away from rough abrasive sequins or sharp metal jewelry.',
@@ -408,7 +408,7 @@ export const PRODUCTS: Product[] = [
     ],
     dimensions: 'Total length: 22cm • Wrist loop: 16cm',
     weight: '28g',
-    description: 'An exquisite multipurpose accessory handcrafted in our Chikamugal studio. Functions as a luxury phone wristlet, keys lanyard, or an opulent hanging charm for your favorite pearl or leather bag.',
+    description: 'An exquisite multipurpose accessory handcrafted in our Chikamugal store workshop. Functions as a luxury phone wristlet, keys lanyard, or an opulent hanging charm for your favorite pearl or leather bag.',
     stylingTip: 'Clip onto your Maya Aurelia Pearl Bag or use as a sophisticated phone strap for quick hands-free photo taking.',
     careNotes: [
       'Wipe pearls gently with a soft microfiber cloth.',
@@ -500,8 +500,8 @@ export const TIKTOK_REELS: TikTokReel[] = [
     views: '142.5K',
     likes: '18.4K',
     thumbnail: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80',
-    videoUrl: 'https://www.tiktok.com/@artified_np',
-    videoCaption: 'Every single bag is knotted by hand right here in Patan, Nepal. Which style should we make next?',
+    videoUrl: '/tiktok_videos/7363984155060817160.mp4',
+    videoCaption: 'Every single bag is knotted by hand right here in Chikamugal, Kathmandu, Nepal. Which style should we make next?',
     featuredProductName: 'The Maya Aurelia Structured Pearl Bag',
     featuredProductId: 'maya-aurelia-pearl-bag'
   },
@@ -512,7 +512,7 @@ export const TIKTOK_REELS: TikTokReel[] = [
     views: '89.2K',
     likes: '11.8K',
     thumbnail: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80',
-    videoUrl: 'https://www.tiktok.com/@artified_np',
+    videoUrl: '/tiktok_videos/7495598629625842952.mp4',
     videoCaption: 'Natural baroque pearls hit differently when paired with rich silk sarees & pastel lehengas!',
     featuredProductName: 'Chandra Asymmetric Baroque Pearl Choker',
     featuredProductId: 'chandra-baroque-pearl-choker'
@@ -524,7 +524,7 @@ export const TIKTOK_REELS: TikTokReel[] = [
     views: '215.8K',
     likes: '29.1K',
     thumbnail: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=600&q=80',
-    videoUrl: 'https://www.tiktok.com/@artified_np',
+    videoUrl: '/tiktok_videos/7625655459537603860.mp4',
     videoCaption: 'Comes with our signature luxury satin dust bag, handwritten note, and pearl care kit.',
     featuredProductName: 'Lalitpur Bloom Rosette Pearl Handbag',
     featuredProductId: 'lalitpur-bloom-pearl-tote'
@@ -536,7 +536,7 @@ export const TIKTOK_REELS: TikTokReel[] = [
     views: '96.4K',
     likes: '14.2K',
     thumbnail: 'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=600&q=80',
-    videoUrl: 'https://www.tiktok.com/@artified_np',
+    videoUrl: '/tiktok_videos/7363984155060817160.mp4',
     videoCaption: 'Yes, your phone, lipstick, compact powder, and car keys fit perfectly without stretching!',
     featuredProductName: 'Tara Micro Pearl Box Clutch',
     featuredProductId: 'tara-micro-pearl-clutch'
@@ -554,7 +554,7 @@ export const FAQS = [
   },
   {
     q: 'Where is your store located and can I pick up in person?',
-    a: 'Our physical store studio is located in Chikamugal, Kathmandu, Nepal. You can visit us in Chikamugal to pick up your handcrafted pieces or order online for fast home delivery with Cash on Delivery (COD).'
+    a: 'Our physical store is located in Chikamugal, Kathmandu, Nepal. You can visit us in Chikamugal to pick up your handcrafted pieces or order online for fast home delivery with Cash on Delivery (COD).'
   },
   {
     q: 'How durable are the pearl bags? Will the beads break?',
@@ -562,6 +562,6 @@ export const FAQS = [
   },
   {
     q: 'What is your exchange and inspection policy?',
-    a: 'We offer easy exchange within 24 hrs of delivery if there is any issue or if you need an adjustment. Simply contact our Chikamugal, Kathmandu studio on WhatsApp with your Order ID for immediate support.'
+    a: 'We offer easy exchange within 24 hrs of delivery if there is any issue or if you need an adjustment. Simply contact our Chikamugal, Kathmandu store on WhatsApp with your Order ID for immediate support.'
   }
 ];

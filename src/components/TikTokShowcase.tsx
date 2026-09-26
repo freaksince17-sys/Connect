@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Play, 
   Pause,
@@ -65,13 +66,13 @@ export const TikTokShowcase: React.FC<TikTokShowcaseProps> = ({ embedded = false
 
   // Resolves to either direct MP4/stream or cached TikTok video endpoint
   const getPlayableVideoUrl = (reel?: TikTokReel | null): string | null => {
-    if (!reel || !reel.videoUrl) return null;
-    if (isDirectVideo(reel.videoUrl)) return reel.videoUrl;
+    if (!reel) return null;
+    if (reel.videoUrl && isDirectVideo(reel.videoUrl)) return reel.videoUrl;
     const ttId = getTikTokVideoId(reel.videoUrl);
     if (ttId) {
-      return `/api/tiktok-video/${ttId}?url=${encodeURIComponent(reel.videoUrl)}`;
+      return `/api/tiktok-video/${ttId}?url=${encodeURIComponent(reel.videoUrl!)}`;
     }
-    return null;
+    return '/tiktok_videos/7363984155060817160.mp4';
   };
 
   // Reset state when active reel changes
@@ -181,7 +182,7 @@ export const TikTokShowcase: React.FC<TikTokShowcaseProps> = ({ embedded = false
               As Seen On TikTok
             </h2>
             <p className="text-xs sm:text-sm text-[#736C65] mt-1.5 max-w-lg">
-              Watch real customer unboxings, slow-motion pearl bag shine tests, and wedding styling guides straight from our studio in Patan.
+              Watch real customer unboxings, slow-motion pearl bag shine tests, and wedding styling guides straight from our store in Chikamugal, Kathmandu.
             </p>
           </div>
 
@@ -449,8 +450,8 @@ export const TikTokShowcase: React.FC<TikTokShowcaseProps> = ({ embedded = false
 
       </div>
 
-      {/* Video Reel Modal with Auto-Play & Mute Controls */}
-      {activeReel && (
+      {/* Video Reel Modal with Auto-Play & Mute Controls (Portaled to document.body to avoid CSS transform bugs) */}
+      {activeReel && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 overflow-hidden flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
           
           {/* Previous Reel Navigation Arrow */}
@@ -890,7 +891,8 @@ export const TikTokShowcase: React.FC<TikTokShowcaseProps> = ({ embedded = false
             })()}
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );

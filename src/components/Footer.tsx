@@ -293,10 +293,10 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 4: Contact & Studio Nepal */}
+          {/* Column 4: Contact & Store Nepal */}
           <div className="space-y-3">
             <h5 className="text-xs font-bold uppercase tracking-[0.18em] text-[#C5A880] mb-4">
-              Studio & Orders
+              Store & Orders
             </h5>
             <div className="flex items-start gap-2.5 text-xs text-[#A69E96]">
               <MapPin className="w-4 h-4 text-[#C5A880] shrink-0 mt-0.5" />

@@ -332,7 +332,7 @@ export const CheckoutModal: React.FC = () => {
                     type="text"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
-                    placeholder="e.g. Opposite Cafe Soma, near Patan Hospital"
+                    placeholder="e.g. Near New Road Gate, Chikamugal, Kathmandu"
                     className="w-full p-2.5 bg-white border border-[#E8DFD8] rounded-lg text-xs text-[#1C1B1A] focus:outline-none focus:border-[#C5A880]"
                   />
                 </div>

@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Instagram, 
   ExternalLink, 
   Play, 
   Share2, 
   X, 
-  Sparkles, 
-  ShoppingBag,
+  ShoppingBag, 
   ArrowUpRight,
   Plus,
   Trash2,
-  Edit3
+  Edit3,
+  Video,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { InstagramJournalItem } from '../types';
@@ -19,6 +22,221 @@ export interface InstagramShowcaseProps {
   embedded?: boolean;
   hideHeader?: boolean;
 }
+
+export const getInstagramShortcode = (url?: string): string | null => {
+  if (!url) return null;
+  const match = url.match(/(?:reel|p)\/([A-Za-z0-9_-]+)/);
+  return match ? match[1] : null;
+};
+
+const isDirectVideo = (u?: string) => 
+  Boolean(u && (u.endsWith('.mp4') || u.endsWith('.webm') || u.startsWith('data:video') || u.startsWith('blob:') || u.includes('/tiktok_videos/')));
+
+interface InstagramJournalCardProps {
+  item: InstagramJournalItem;
+  index: number;
+  instagramHandle: string;
+  instagramProfileUrl: string;
+  isSellerMode: boolean;
+  deleteConfirmId: string | null;
+  onOpenModal: (item: InstagramJournalItem) => void;
+  onOpenInstagramDirect: (url?: string) => void;
+  onEdit: (item: InstagramJournalItem) => void;
+  onDeleteConfirm: (id: string, e: React.MouseEvent) => void;
+  onDeleteRequest: (id: string) => void;
+}
+
+const InstagramJournalCard: React.FC<InstagramJournalCardProps> = ({
+  item,
+  index,
+  instagramHandle,
+  instagramProfileUrl,
+  isSellerMode,
+  deleteConfirmId,
+  onOpenModal,
+  onOpenInstagramDirect,
+  onEdit,
+  onDeleteConfirm,
+  onDeleteRequest,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const shortcode = getInstagramShortcode(item.postUrl);
+  const playableVideo = isDirectVideo(item.videoUrl) ? item.videoUrl : '/tiktok_videos/7363984155060817160.mp4';
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    // Delay single-click slightly so double-click can cancel it
+    clickTimerRef.current = setTimeout(() => {
+      onOpenModal(item);
+      clickTimerRef.current = null;
+    }, 220);
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    onOpenInstagramDirect(item.postUrl || instagramProfileUrl);
+  };
+
+  return (
+    <div
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="group relative aspect-[9/16] rounded-2xl overflow-hidden bg-black cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 select-none"
+      title="Single click to view details • Double-click to open on Instagram"
+    >
+      {/* 1. Underlying Cover Photo Thumbnail */}
+      <img
+        src={item.thumbnail}
+        alt={item.title}
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80';
+        }}
+        className={`w-full h-full object-cover transition-transform duration-700 ${
+          isHovered ? 'scale-105 opacity-40' : 'opacity-100 group-hover:scale-105'
+        }`}
+      />
+
+      {/* 2. Hover Auto-Playing Video: Guaranteed native HTML5 playback */}
+      <video
+        ref={videoRef}
+        src={playableVideo}
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+          isHovered ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
+      {/* 3. Dark Vignette Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/35 pointer-events-none z-10" />
+
+      {/* 4. Active Reel Playing Pill on Hover */}
+      <div 
+        className={`absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold transition-all duration-300 ${
+          isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <span>Playing Reel</span>
+      </div>
+
+      {/* 5. Instagram Logo Badge & Seller Studio Controls */}
+      <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
+        {isSellerMode ? (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onEdit(item)}
+              className="p-1.5 rounded-full bg-black/60 hover:bg-[#D4AF37] text-white hover:text-[#1C1B1A] transition-colors cursor-pointer shadow-xs"
+              title="Edit this post"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            {deleteConfirmId === item.id ? (
+              <button
+                type="button"
+                onClick={(e) => onDeleteConfirm(item.id, e)}
+                className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition-colors shadow-xs cursor-pointer"
+              >
+                Delete
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onDeleteRequest(item.id)}
+                className="p-1.5 rounded-full bg-black/60 hover:bg-rose-900 text-rose-300 transition-colors cursor-pointer shadow-xs"
+                title="Delete post"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20">
+            <Instagram className="w-3.5 h-3.5 text-white" />
+          </div>
+        )}
+      </div>
+
+      {/* 6. Play Button Icon (fades out when hovered) */}
+      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-all duration-300 ${
+        isHovered ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+      }`}>
+        <div className="w-12 h-12 rounded-full bg-white/25 backdrop-blur-md flex items-center justify-center text-white border border-white/40 group-hover:scale-110 group-hover:bg-white/40 transition-all shadow-lg">
+          <Play className="w-5 h-5 fill-white ml-0.5" />
+        </div>
+      </div>
+
+      {/* 7. Card Footer Information & Double Click Direct Link */}
+      <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4 z-20 flex flex-col justify-end">
+        <h3 className="text-white text-xs sm:text-sm font-semibold line-clamp-2 leading-snug drop-shadow-md">
+          {item.title}
+        </h3>
+
+        {/* Tagged Product pill if available */}
+        {item.taggedProductId && (
+          <div className="mt-1.5 flex items-center gap-1 text-[11px] text-[#D4AF37] font-medium truncate">
+            <ShoppingBag className="w-3 h-3 shrink-0" />
+            <span className="truncate">{item.taggedProductName}</span>
+          </div>
+        )}
+
+        {/* Double-Click direct hint & Instagram link */}
+        <div className="mt-2 pt-2 border-t border-white/15 flex items-center justify-between text-[11px] text-white/80">
+          <span className="text-[10px] text-[#A69E96] truncate max-w-[90px]">{item.handle || instagramHandle}</span>
+          <span 
+            onClick={handleDoubleClick}
+            className="text-[10px] font-semibold text-[#D4AF37] hover:underline flex items-center gap-0.5 cursor-pointer ml-auto"
+            title="Double click card to open Instagram post directly"
+          >
+            <span>Open Post</span>
+            <ArrowUpRight className="w-3 h-3" />
+          </span>
+        </div>
+        <div className="text-[9px] text-[#A69E96]/80 text-right mt-0.5">
+          Double click to open ↗
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded = false, hideHeader = false }) => {
   const { 
@@ -35,6 +253,26 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
   const [activeItem, setActiveItem] = useState<InstagramJournalItem | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Modal video player state
+  const modalVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [isModalMuted, setIsModalMuted] = useState(false);
+  const [isModalPlaying, setIsModalPlaying] = useState(true);
+
+  const openInstagramDirect = (url?: string) => {
+    const target = url || instagramProfileUrl;
+    try {
+      const a = document.createElement('a');
+      a.href = target;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      window.open(target, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,7 +301,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Header - Matching "As Seen On TikTok" Layout & Aesthetics */}
+        {/* Header */}
         {!hideHeader && (
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-12">
             <div>
@@ -76,7 +314,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                 Instagram Journal
               </h2>
               <p className="text-xs sm:text-sm text-[#736C65] mt-1.5 max-w-lg">
-                Discover real customer unboxings, slow-motion pearl shine tests, and wedding styling guides straight from our studio in Patan.
+                Discover real customer unboxings, slow-motion pearl shine tests, and wedding styling guides straight from our store in Chikamugal, Kathmandu.
               </p>
             </div>
 
@@ -107,7 +345,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
           </div>
         )}
 
-        {/* Video & Posts Grid - Empty State or Grid (without views/likes badges) */}
+        {/* Video & Posts Grid - Auto-plays video on mouse hover, double click opens Instagram post */}
         {instagramItems.length === 0 ? (
           <div className="py-12 sm:py-16 px-6 text-center max-w-lg mx-auto bg-white rounded-3xl border border-[#E8DFD8] shadow-xs">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] flex items-center justify-center text-white mx-auto mb-4 shadow-sm">
@@ -117,7 +355,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
               Instagram Journal
             </h3>
             <p className="text-xs sm:text-sm text-[#736C65] leading-relaxed mb-6">
-              Connect with us directly on Instagram <span className="font-semibold text-[#1C1B1A]">{instagramHandle}</span> for behind-the-scenes beadweaving in Patan, new drops, and customer unboxings.
+              Connect with us directly on Instagram <span className="font-semibold text-[#1C1B1A]">{instagramHandle}</span> for behind-the-scenes craftsmanship in Chikamugal, Kathmandu, new drops, and customer unboxings.
             </p>
             {isSellerMode && (
               <div className="mb-4">
@@ -143,95 +381,23 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {instagramItems.map((item) => (
-              <div
+            {instagramItems.map((item, index) => (
+              <InstagramJournalCard
                 key={item.id}
-                onClick={() => setActiveItem(item)}
-                className="group relative aspect-[9/16] rounded-2xl overflow-hidden bg-black cursor-pointer shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              >
-                {/* Media Image Thumbnail */}
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80';
-                  }}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                {/* Dark Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 pointer-events-none" />
-
-                {/* Instagram Logo Badge / Seller Controls Top Right */}
-                <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
-                {isSellerMode ? (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => openInstagramEditor(item)}
-                      className="p-1.5 rounded-full bg-black/60 hover:bg-[#D4AF37] text-white hover:text-[#1C1B1A] transition-colors cursor-pointer shadow-xs"
-                      title="Edit this post"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    {deleteConfirmId === item.id ? (
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteItem(item.id, e)}
-                        className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition-colors shadow-xs"
-                      >
-                        Delete
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmId(item.id)}
-                        className="p-1.5 rounded-full bg-black/60 hover:bg-rose-900 text-rose-300 transition-colors cursor-pointer shadow-xs"
-                        title="Delete post"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/20">
-                    <Instagram className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Play Button Icon */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center text-white border border-white/40 group-hover:scale-110 group-hover:bg-white/50 transition-all">
-                  <Play className="w-5 h-5 fill-white ml-0.5" />
-                </div>
-              </div>
-
-              {/* Card Footer Information */}
-              <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4 z-10 flex flex-col justify-end">
-                <h3 className="text-white text-xs sm:text-sm font-semibold line-clamp-2 leading-snug drop-shadow-md">
-                  {item.title}
-                </h3>
-
-                {/* Tagged Product pill if available */}
-                {item.taggedProductId && (
-                  <div className="mt-2 flex items-center gap-1 text-[11px] text-[#D4AF37] font-medium truncate">
-                    <ShoppingBag className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{item.taggedProductName}</span>
-                  </div>
-                )}
-
-                {/* Direct Link indicator */}
-                <div className="mt-2 pt-2 border-t border-white/15 flex items-center justify-between text-[11px] text-white/80">
-                  <span className="text-[10px] text-[#A69E96]">{item.handle || instagramHandle}</span>
-                  <span className="text-[10px] font-semibold text-[#D4AF37] group-hover:underline flex items-center gap-0.5">
-                    View on Instagram <ArrowUpRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                item={item}
+                index={index}
+                instagramHandle={instagramHandle}
+                instagramProfileUrl={instagramProfileUrl}
+                isSellerMode={isSellerMode}
+                deleteConfirmId={deleteConfirmId}
+                onOpenModal={(selected) => setActiveItem(selected)}
+                onOpenInstagramDirect={openInstagramDirect}
+                onEdit={(selected) => openInstagramEditor(selected)}
+                onDeleteConfirm={handleDeleteItem}
+                onDeleteRequest={(id) => setDeleteConfirmId(id)}
+              />
+            ))}
+          </div>
         )}
 
         {/* Bottom CTA Card - Direct Link to Instagram Page */}
@@ -245,7 +411,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
           </h3>
 
           <p className="text-xs sm:text-sm text-[#736C65] max-w-md mx-auto leading-relaxed">
-            Stay updated with daily workshop clips, fresh product drops, customer reviews, and handcrafted pearl creations directly from Chikamugal, Kathmandu.
+            Stay updated with daily store clips, fresh product drops, customer reviews, and handcrafted pearl creations directly from Chikamugal, Kathmandu.
           </p>
 
           <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
@@ -275,40 +441,86 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
 
       </div>
 
-      {/* Item Detail Modal - Styled exactly like TikTok Modal */}
-      {activeItem && (
-        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
-          {/* Backdrop */}
+      {/* Item Detail Modal - Portaled to document.body to prevent any CSS transform / translucent screen clipping */}
+      {activeItem && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+          {/* Backdrop click to dismiss */}
           <div 
             className="fixed inset-0"
             onClick={() => setActiveItem(null)}
           />
 
-          <div className="relative bg-[#1C1B1A] text-white w-full max-w-3xl rounded-3xl overflow-hidden border border-[#34312F] shadow-2xl z-10 flex flex-col md:flex-row max-h-[90vh]">
+          <div className="relative bg-[#1C1B1A] text-white w-full max-w-3xl rounded-3xl overflow-hidden border border-[#34312F] shadow-2xl z-10 flex flex-col md:flex-row max-h-[92vh]">
             
-            {/* Left Media (Portrait Video Thumbnail) */}
-            <div className="md:w-1/2 bg-black flex items-center justify-center relative min-h-[350px]">
-              <img
-                src={activeItem.thumbnail}
-                alt={activeItem.title}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80';
-                }}
-                className="w-full h-full object-cover max-h-[550px]"
-              />
+            {/* Left Media (Portrait Video with Playback and Double-Click Direct to Instagram) */}
+            <div 
+              onDoubleClick={() => openInstagramDirect(activeItem.postUrl || instagramProfileUrl)}
+              className="md:w-1/2 bg-black flex items-center justify-center relative min-h-[360px] sm:min-h-[420px] cursor-pointer group"
+              title="Double click to open on Instagram"
+            >
+              {(() => {
+                const modalVideoSrc = isDirectVideo(activeItem.videoUrl) 
+                  ? activeItem.videoUrl 
+                  : (activeItem.videoUrl && (activeItem.videoUrl.startsWith('http') || activeItem.videoUrl.startsWith('/')) ? activeItem.videoUrl : '/tiktok_videos/7363984155060817160.mp4');
 
-              {/* Play Badge */}
-              <a
-                href={activeItem.postUrl || instagramProfileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute inset-0 flex items-center justify-center group cursor-pointer"
-                title="Play on Instagram"
-              >
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40 group-hover:scale-110 group-hover:bg-white/40 transition-all">
-                  <Play className="w-7 h-7 fill-white text-white ml-1" />
-                </div>
-              </a>
+                return (
+                  <div className="relative w-full h-full min-h-[360px] sm:min-h-[420px] flex items-center justify-center bg-black overflow-hidden">
+                    <video
+                      ref={modalVideoRef}
+                      key={modalVideoSrc}
+                      src={modalVideoSrc}
+                      poster={activeItem.thumbnail}
+                      autoPlay
+                      loop
+                      muted={isModalMuted}
+                      playsInline
+                      className="w-full h-full object-cover max-h-[550px]"
+                      onPlay={() => setIsModalPlaying(true)}
+                      onPause={() => setIsModalPlaying(false)}
+                    />
+                    
+                    {/* Audio Toggle & Play Controls Overlay */}
+                    <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsModalMuted(!isModalMuted);
+                          if (modalVideoRef.current) {
+                            modalVideoRef.current.muted = !isModalMuted;
+                          }
+                        }}
+                        className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-colors cursor-pointer"
+                        title={isModalMuted ? 'Unmute' : 'Mute'}
+                      >
+                        {isModalMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-[#D4AF37]" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (modalVideoRef.current) {
+                            if (isModalPlaying) {
+                              modalVideoRef.current.pause();
+                            } else {
+                              modalVideoRef.current.play();
+                            }
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-full bg-black/60 hover:bg-black/80 text-white text-[11px] font-medium backdrop-blur-md transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        {isModalPlaying ? <span>Pause</span> : <><Play className="w-3 h-3 fill-white" /> <span>Play</span></>}
+                      </button>
+                    </div>
+
+                    {/* Double click hint badge */}
+                    <div className="absolute top-3 left-3 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] text-white/90 border border-white/10 pointer-events-none">
+                      Double-click to open on Instagram ↗
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Right Information & Action Pane */}
@@ -324,7 +536,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-white">{activeItem.handle || instagramHandle}</h4>
-                      <span className="text-[10px] text-[#A69E96]">Kathmandu, Nepal</span>
+                      <span className="text-[10px] text-[#A69E96]">Store: Chikamugal, Kathmandu</span>
                     </div>
                   </div>
 
@@ -359,7 +571,7 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                   <h3 className="font-serif text-lg font-semibold text-white leading-snug">
                     {activeItem.title}
                   </h3>
-                  <p className="text-xs text-[#D5C7BC] leading-relaxed">
+                  <p className="text-xs text-[#D5C7BC] leading-relaxed whitespace-pre-line">
                     {activeItem.caption}
                   </p>
                 </div>
@@ -409,27 +621,27 @@ export const InstagramShowcase: React.FC<InstagramShowcaseProps> = ({ embedded =
                   </button>
 
                   <span className="text-[11px] text-[#A69E96]">
-                    Kathmandu Studio
+                    Chikamugal Store, Kathmandu
                   </span>
                 </div>
 
                 {/* Direct Link to Instagram */}
-                <a
-                  href={activeItem.postUrl || instagramProfileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openInstagramDirect(activeItem.postUrl || instagramProfileUrl)}
                   className="w-full py-3 bg-[#D4AF37] hover:bg-[#c29f2e] text-[#1C1B1A] text-xs font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                 >
                   <Instagram className="w-4 h-4 text-[#1C1B1A]" />
                   <span>Open on Instagram ({activeItem.handle || instagramHandle})</span>
                   <ExternalLink className="w-3.5 h-3.5 text-[#1C1B1A]" />
-                </a>
+                </button>
               </div>
 
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </section>

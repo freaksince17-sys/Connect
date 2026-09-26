@@ -14,7 +14,9 @@ import {
   Image as ImageIcon,
   AtSign,
   Globe,
-  RotateCcw
+  RotateCcw,
+  Video,
+  Play
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { InstagramJournalItem } from '../types';
@@ -46,6 +48,7 @@ export const InstagramManageModal: React.FC = () => {
   const [postUrl, setPostUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [thumbnail, setThumbnail] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [taggedProductId, setTaggedProductId] = useState('');
 
   // Global settings state
@@ -59,27 +62,195 @@ export const InstagramManageModal: React.FC = () => {
   // Inline delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [isExtractingFrame, setIsExtractingFrame] = useState(false);
+
+  // Helper to extract cover photo thumbnail directly from any video source
+  const extractCoverPhotoFromVideo = (videoSource: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'auto';
+      video.src = videoSource;
+
+      let resolved = false;
+      const capture = () => {
+        if (resolved) return;
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 480;
+          canvas.height = video.videoHeight || 854;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+            resolved = true;
+            resolve(dataUrl);
+            return;
+          }
+        } catch (err) {
+          console.warn('Canvas capture error:', err);
+        }
+        resolve('');
+      };
+
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(0.5, (video.duration || 1) / 2);
+      };
+
+      video.onseeked = () => {
+        capture();
+      };
+
+      video.onerror = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve('');
+        }
+      };
+
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          resolve('');
+        }
+      }, 3500);
+    });
+  };
+
+  const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsExtractingFrame(true);
+    const blobUrl = URL.createObjectURL(file);
+    setVideoUrl(blobUrl);
+
+    try {
+      const extractedFrame = await extractCoverPhotoFromVideo(blobUrl);
+      if (extractedFrame) {
+        setThumbnail(extractedFrame);
+      }
+    } catch (err) {
+      console.warn('Could not extract cover photo from video:', err);
+    } finally {
+      setIsExtractingFrame(false);
+    }
+  };
+
+  const extractCoverPhotoFromCurrentVideo = async () => {
+    if (!videoUrl) return;
+    setIsExtractingFrame(true);
+    try {
+      const frame = await extractCoverPhotoFromVideo(videoUrl);
+      if (frame) {
+        setThumbnail(frame);
+      }
+    } catch (err) {
+      console.warn('Could not extract frame from video:', err);
+    } finally {
+      setIsExtractingFrame(false);
+    }
+  };
+
+  const handleSelectVideoPreset = async (presetUrl: string) => {
+    setVideoUrl(presetUrl);
+    setIsExtractingFrame(true);
+    try {
+      const frame = await extractCoverPhotoFromVideo(presetUrl);
+      if (frame) {
+        setThumbnail(frame);
+      }
+    } catch (err) {
+      console.warn('Preset frame error:', err);
+    } finally {
+      setIsExtractingFrame(false);
+    }
+  };
 
   // Automatically update cover photo, headline, and caption from tagged product
   const handleAutoFillFromProduct = (productId: string) => {
     const prod = products.find((p) => p.id === productId);
     if (!prod) return;
 
-    // 1. Automatically update cover photo
-    if (prod.images && prod.images.length > 0) {
+    // 1. Automatically update cover photo if currently empty
+    if (!thumbnail && prod.images && prod.images.length > 0) {
       setThumbnail(prod.images[0]);
     }
 
     // 2. Automatically update headline
-    setTitle(`${prod.title} • Handcrafted in Nepal`);
+    setTitle(`${prod.title} • Handcrafted in Chikamugal, Kathmandu`);
 
-    // 3. Automatically update caption
+    // 3. Automatically update caption (referencing store in Chikamugal, Kathmandu)
     const materialsStr = prod.materials && prod.materials.length > 0 
       ? prod.materials.join(', ') 
       : 'lustrous freshwater pearls and artisanal cord';
     const subtitlePart = prod.subtitle ? `${prod.subtitle}. ` : '';
-    const generatedCaption = `${subtitlePart}Artisanal elegance handcrafted in Kathmandu with ${materialsStr}. Individually hand-knotted for lifetime durability and brilliant luster.\n\n✨ Price: NPR ${prod.price.toLocaleString()} (${prod.category})\n📍 Made at Chikamugal Studio, Patan\n🛍️ Tap the piece to shop or DM us on Instagram to order!`;
+    const generatedCaption = `${subtitlePart}Artisanal elegance handcrafted at our store in Chikamugal, Kathmandu with ${materialsStr}. Individually hand-knotted for lifetime durability and brilliant luster.\n\n✨ Price: NPR ${prod.price.toLocaleString()} (${prod.category})\n📍 Handcrafted at Chikamugal Store, Kathmandu\n🛍️ Tap the piece to shop or message us to order! #ArtifiedNepal #ChikamugalStore #KathmanduCraft`;
     setCaption(generatedCaption);
+
+    // 4. Default video if completely empty
+    if (!videoUrl) {
+      setVideoUrl('/tiktok_videos/7363984155060817160.mp4');
+    }
+  };
+
+  const handleAutoGenerateDetails = async () => {
+    setIsExtractingFrame(true);
+    try {
+      // 1. Title
+      if (!title.trim()) {
+        if (taggedProductId) {
+          const prod = products.find((p) => p.id === taggedProductId);
+          if (prod) setTitle(`${prod.title} • Chikamugal Store Reel`);
+          else setTitle('Handcrafted Pearl Piece • Chikamugal Store');
+        } else {
+          setTitle('Artisan Store Reel • Handcrafted in Chikamugal, Kathmandu');
+        }
+      }
+
+      // 2. Caption
+      if (!caption.trim()) {
+        if (taggedProductId) {
+          const prod = products.find((p) => p.id === taggedProductId);
+          if (prod) {
+            const materialsStr = prod.materials?.join(', ') || 'lustrous freshwater pearls and durable jeweler cord';
+            setCaption(`Behind the craft at Artified store in Chikamugal, Kathmandu. Each pearl individually hand-knotted with ${materialsStr} for lifetime durability and brilliant organic luster.\n\n✨ Price: NPR ${prod.price.toLocaleString()} (${prod.category})\n📍 Handcrafted at Chikamugal Store, Kathmandu\n🛍️ Tap the piece to shop or message us on WhatsApp to order! #ArtifiedNepal #ChikamugalStore #KathmanduCraft`);
+          }
+        } else {
+          setCaption('Behind the craft at Artified store in Chikamugal, Kathmandu. Each bead individually hand-woven with high-tensile jewelers thread for unmatched durability and pure organic luster.\n\n✨ Handmade with love in Kathmandu, Nepal\n📍 Store: Chikamugal, Kathmandu\n🛍️ Tap or double-click to view the full reel on Instagram! #ArtifiedNepal #ChikamugalStore #PearlBagReel #HandmadeLuxury');
+        }
+      }
+
+      // 3. Auto-select cover photo from video if videoUrl is set!
+      if (videoUrl) {
+        const frame = await extractCoverPhotoFromVideo(videoUrl);
+        if (frame) {
+          setThumbnail(frame);
+          return;
+        }
+      }
+
+      // 4. If tagged product exists and no cover photo yet, use product photo
+      if (!thumbnail.trim()) {
+        if (taggedProductId) {
+          const prod = products.find((p) => p.id === taggedProductId);
+          if (prod && prod.images && prod.images.length > 0) {
+            setThumbnail(prod.images[0]);
+            return;
+          }
+        }
+        setThumbnail('https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80');
+      }
+
+      // 5. Default video if completely unset
+      if (!videoUrl.trim()) {
+        setVideoUrl('/tiktok_videos/7495598629625842952.mp4');
+      }
+    } finally {
+      setIsExtractingFrame(false);
+    }
   };
 
   const handleProductSelect = (prodId: string) => {
@@ -98,6 +269,7 @@ export const InstagramManageModal: React.FC = () => {
       setPostUrl(editingInstagramItem.postUrl || '');
       setCaption(editingInstagramItem.caption || '');
       setThumbnail(editingInstagramItem.thumbnail || '');
+      setVideoUrl(editingInstagramItem.videoUrl || '');
       setTaggedProductId(editingInstagramItem.taggedProductId || '');
       setActiveTab('editor');
     } else {
@@ -118,6 +290,7 @@ export const InstagramManageModal: React.FC = () => {
     setPostUrl(instagramProfileUrl || 'https://www.instagram.com/artified_np/');
     setCaption('');
     setThumbnail('');
+    setVideoUrl('');
     setTaggedProductId('');
     setErrorMessage('');
   };
@@ -164,7 +337,7 @@ export const InstagramManageModal: React.FC = () => {
     setErrorMessage('');
 
     try {
-      const matchedProd = products.find((p) => p.id === taggedProductId);
+      const matchedProd = taggedProductId ? products.find((p) => p.id === taggedProductId) : null;
 
       const payload: InstagramJournalItem = {
         id: itemId || `ig-post-${Date.now()}`,
@@ -173,9 +346,12 @@ export const InstagramManageModal: React.FC = () => {
         postUrl: postUrl.trim() || instagramProfileUrl,
         caption: caption.trim() || 'Latest artisanal release from @artified_np on Instagram.',
         thumbnail: thumbnail.trim() || (matchedProd?.images?.[0] || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80'),
-        taggedProductId: taggedProductId || undefined,
-        taggedProductName: matchedProd ? matchedProd.title : undefined,
-        taggedProductPrice: matchedProd ? matchedProd.price : undefined,
+        ...(videoUrl.trim() ? { videoUrl: videoUrl.trim() } : {}),
+        ...(taggedProductId && matchedProd ? {
+          taggedProductId: taggedProductId.trim(),
+          taggedProductName: matchedProd.title || 'Handcrafted Artisan Piece',
+          taggedProductPrice: matchedProd.price || 0,
+        } : {}),
       };
 
       if (itemId) {
@@ -559,21 +735,33 @@ export const InstagramManageModal: React.FC = () => {
 
               {/* Product Auto-Fill & Tagging Section */}
               <div className="p-3.5 bg-gradient-to-r from-[#FAF8F5] to-[#F4EFEB] border border-[#D5C7BC] rounded-xl space-y-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-1.5">
                   <label className="block text-xs font-semibold text-[#1C1B1A] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#C5A880]" />
                     <span>Tag Product (Auto-updates Cover Photo, Headline & Caption)</span>
                   </label>
-                  {taggedProductId && (
+                  <div className="flex items-center gap-1.5">
+                    {taggedProductId ? (
+                      <button
+                        type="button"
+                        onClick={() => handleProductSelect('')}
+                        className="text-[10px] font-bold text-rose-700 hover:text-rose-900 flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 border border-rose-200 shadow-2xs hover:bg-rose-100 transition-colors cursor-pointer"
+                        title="Set to None (Do not tag any product)"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                        <span>Select None</span>
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      onClick={() => handleAutoFillFromProduct(taggedProductId)}
+                      onClick={handleAutoGenerateDetails}
                       className="text-[10px] font-bold text-[#8C7A6B] hover:text-[#1C1B1A] flex items-center gap-1 px-2.5 py-1 rounded bg-white border border-[#D5C7BC] shadow-2xs hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                      title="Auto-generate headline, caption, and cover photo"
                     >
-                      <RotateCcw className="w-2.5 h-2.5 text-[#D4AF37]" />
-                      <span>Re-apply Auto-Update</span>
+                      <Sparkles className="w-2.5 h-2.5 text-[#D4AF37]" />
+                      <span>{taggedProductId ? 'Re-apply Auto-Update' : 'Auto-Generate Details'}</span>
                     </button>
-                  )}
+                  </div>
                 </div>
 
                 <select
@@ -581,7 +769,7 @@ export const InstagramManageModal: React.FC = () => {
                   onChange={(e) => handleProductSelect(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-white border border-[#D5C7BC] rounded-lg focus:outline-hidden focus:border-[#1C1B1A] font-medium"
                 >
-                  <option value="">Select a product to automatically fill photo, headline & caption...</option>
+                  <option value="">None (No product tagged / Standalone Reel)</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.title} — NPR {p.price.toLocaleString()} ({p.category})
@@ -589,7 +777,7 @@ export const InstagramManageModal: React.FC = () => {
                   ))}
                 </select>
                 <p className="text-[10px] text-[#736C65]">
-                  Selecting any product will instantly set its cover photo, generate an artisanal story caption, and insert the headline. You can also customize them afterwards.
+                  Selecting any product auto-fills the photo, headline & caption. You can select "None" or edit anything anytime!
                 </p>
               </div>
 
@@ -604,7 +792,13 @@ export const InstagramManageModal: React.FC = () => {
                     <input
                       type="url"
                       value={postUrl}
-                      onChange={(e) => setPostUrl(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPostUrl(val);
+                        if (val && !title.trim()) {
+                          handleAutoGenerateDetails();
+                        }
+                      }}
                       placeholder="https://www.instagram.com/p/... or https://www.instagram.com/reel/..."
                       className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-[#D5C7BC] rounded-lg focus:outline-hidden focus:border-[#1C1B1A]"
                     />
@@ -631,9 +825,7 @@ export const InstagramManageModal: React.FC = () => {
                     <label className="block text-xs font-semibold text-[#1C1B1A]">
                       Journal Headline / Title *
                     </label>
-                    {taggedProductId && (
-                      <span className="text-[9px] text-[#C5A880] font-semibold">Auto-Synced</span>
-                    )}
+                    <span className="text-[9px] text-[#736C65]">Editable</span>
                   </div>
                   <input
                     type="text"
@@ -665,12 +857,10 @@ export const InstagramManageModal: React.FC = () => {
                   <label className="block text-xs font-semibold text-[#1C1B1A]">
                     Story Caption / Excerpt
                   </label>
-                  {taggedProductId && (
-                    <span className="text-[9px] text-[#C5A880] font-semibold">Auto-Generated</span>
-                  )}
+                  <span className="text-[9px] text-[#736C65]">Editable</span>
                 </div>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Share the artisanal details, artisan craftsmanship, or customer styling notes..."
@@ -678,15 +868,27 @@ export const InstagramManageModal: React.FC = () => {
                 />
               </div>
 
-              {/* Cover Photo: Upload or URL */}
+              {/* Cover Photo: Upload, Auto-Capture from Video, or URL */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-[#1C1B1A]">
                     Cover Photo / Artwork *
                   </label>
-                  {taggedProductId && (
-                    <span className="text-[9px] text-[#C5A880] font-semibold">Auto-Updated from Piece</span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {videoUrl && (
+                      <button
+                        type="button"
+                        onClick={extractCoverPhotoFromCurrentVideo}
+                        disabled={isExtractingFrame}
+                        className="px-2 py-0.5 rounded bg-[#FAF8F5] hover:bg-[#F4EFEB] text-[#1C1B1A] border border-[#D5C7BC] text-[10px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Capture current video frame as cover photo"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-[#D4AF37]" />
+                        <span>{isExtractingFrame ? 'Capturing...' : 'Capture from Video'}</span>
+                      </button>
+                    )}
+                    <span className="text-[9px] text-[#736C65]">Editable</span>
+                  </div>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3 items-start">
@@ -704,17 +906,17 @@ export const InstagramManageModal: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center text-[#8C7A6B] p-2 text-center">
                         <ImageIcon className="w-6 h-6 mb-1 text-[#C5A880]" />
-                        <span className="text-[9px] text-[#A39990]">Upload Photo</span>
+                        <span className="text-[9px] text-[#A39990]">Upload or Capture</span>
                       </div>
                     )}
                   </div>
 
                   <div className="flex-1 space-y-2 w-full">
                     {/* File Upload Button */}
-                    <div>
+                    <div className="flex flex-wrap gap-2">
                       <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#D5C7BC] hover:border-[#1C1B1A] rounded-lg text-xs font-medium text-[#1C1B1A] cursor-pointer transition-colors shadow-2xs">
                         <Upload className="w-3.5 h-3.5 text-[#8C7A6B]" />
-                        <span>Upload Image File (Auto-Compressed)</span>
+                        <span>Upload Image File</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -722,9 +924,17 @@ export const InstagramManageModal: React.FC = () => {
                           className="hidden"
                         />
                       </label>
-                      <p className="text-[10px] text-[#736C65] mt-1">
-                        High resolution portrait photos work best.
-                      </p>
+                      {videoUrl && (
+                        <button
+                          type="button"
+                          onClick={extractCoverPhotoFromCurrentVideo}
+                          disabled={isExtractingFrame}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F5] border border-[#D5C7BC] hover:border-[#1C1B1A] rounded-lg text-xs font-medium text-[#1C1B1A] transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <span>{isExtractingFrame ? 'Extracting...' : 'Extract from Reel Video'}</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Or Image URL */}
@@ -738,6 +948,90 @@ export const InstagramManageModal: React.FC = () => {
                         className="w-full px-3 py-1.5 text-xs bg-white border border-[#D5C7BC] rounded-lg focus:outline-hidden focus:border-[#1C1B1A]"
                       />
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reel Video (Auto-Plays on Hover) */}
+              <div className="p-3 bg-white border border-[#D5C7BC] rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-[#1C1B1A] flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Reel Video File / Stream (Plays Automatically on Hover)</span>
+                  </label>
+                  <span className="text-[10px] text-[#8C7A6B]">MP4 / Store Clip</span>
+                </div>
+
+                {/* Upload or input video */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <label className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#1C1B1A] text-white hover:bg-[#34312F] rounded-lg text-xs font-medium cursor-pointer transition-colors shrink-0 shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Upload Reel Video (MP4)</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      onChange={handleVideoFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <div className="flex-1 flex gap-1.5">
+                    <input
+                      type="text"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="/tiktok_videos/7495598629625842952.mp4 or direct MP4 URL"
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#D5C7BC] rounded-lg focus:outline-hidden focus:border-[#1C1B1A]"
+                    />
+                    {videoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoUrl('')}
+                        className="px-2.5 py-1 text-xs text-[#8C7A6B] hover:text-[#1C1B1A] border border-[#D5C7BC] rounded-lg cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Store Video Presets */}
+                <div className="space-y-1 pt-1 border-t border-[#F0EBE5]">
+                  <span className="text-[10px] font-semibold text-[#736C65] block">Quick Store Reel Presets (Clicking also auto-selects cover photo):</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVideoPreset('/tiktok_videos/7495598629625842952.mp4')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                        videoUrl === '/tiktok_videos/7495598629625842952.mp4'
+                          ? 'bg-[#1C1B1A] text-[#D4AF37] border-[#1C1B1A]'
+                          : 'bg-[#FAF8F5] text-[#1C1B1A] border-[#D5C7BC] hover:bg-[#F4EFEB]'
+                      }`}
+                    >
+                      ✨ Handcrafted Bead Weaving
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVideoPreset('/tiktok_videos/7363984155060817160.mp4')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                        videoUrl === '/tiktok_videos/7363984155060817160.mp4'
+                          ? 'bg-[#1C1B1A] text-[#D4AF37] border-[#1C1B1A]'
+                          : 'bg-[#FAF8F5] text-[#1C1B1A] border-[#D5C7BC] hover:bg-[#F4EFEB]'
+                      }`}
+                    >
+                      ✨ Pearl Shine Test
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectVideoPreset('/tiktok_videos/7625655459537603860.mp4')}
+                      className={`px-2.5 py-1 rounded text-[10px] font-medium border transition-colors cursor-pointer ${
+                        videoUrl === '/tiktok_videos/7625655459537603860.mp4'
+                          ? 'bg-[#1C1B1A] text-[#D4AF37] border-[#1C1B1A]'
+                          : 'bg-[#FAF8F5] text-[#1C1B1A] border-[#D5C7BC] hover:bg-[#F4EFEB]'
+                      }`}
+                    >
+                      ✨ Bridal Bag Showcase
+                    </button>
                   </div>
                 </div>
               </div>

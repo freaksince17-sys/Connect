@@ -21,6 +21,8 @@ import {
 } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/firestoreErrors';
 import { compressImage } from '../utils/imageCompressor';
+import { sanitizeForFirestore } from '../utils/firestoreSanitizer';
+import { sanitizeReviewItem } from '../utils/productStats';
 
 export type AppNavTab = 'home' | 'tiktok' | 'journal' | 'craft' | 'track';
 
@@ -220,10 +222,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem('artified_tiktok_reels');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((r, i) => ({
+            ...r,
+            videoUrl: (!r.videoUrl || (r.videoUrl.includes('@artified_np') && !r.videoUrl.includes('/video/')))
+              ? TIKTOK_REELS[i % TIKTOK_REELS.length].videoUrl
+              : r.videoUrl
+          }));
+        }
       }
     } catch {}
-    return [];
+    return TIKTOK_REELS;
   });
   const [isTikTokManagerOpen, setIsTikTokManagerOpen] = useState<boolean>(false);
   const [editingReel, setEditingReel] = useState<TikTokReel | null>(null);
@@ -386,12 +395,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Add customer review to a product
   const addProductReview = async (productId: string, review: ProductReviewItem) => {
     try {
+      const sanitized = sanitizeReviewItem(review);
       const updatedProducts = products.map((prod) => {
         if (prod.id === productId) {
           const existingReviews = prod.customReviews || [];
           return {
             ...prod,
-            customReviews: [review, ...existingReviews]
+            customReviews: [sanitized, ...existingReviews]
           };
         }
         return prod;
@@ -719,7 +729,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 3. Write directly to Cloud Firestore so smartphone and all devices get it immediately
     try {
       const docRef = doc(db, 'products', cleanedProduct.id);
-      await setDoc(docRef, cleanedProduct);
+      await setDoc(docRef, sanitizeForFirestore(cleanedProduct));
     } catch (err) {
       console.error('Failed to update product in Firestore:', err);
       handleFirestoreError(err, OperationType.UPDATE, `products/${cleanedProduct.id}`);
@@ -750,7 +760,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, 'products', cleanedProduct.id);
-      await setDoc(docRef, cleanedProduct);
+      await setDoc(docRef, sanitizeForFirestore(cleanedProduct));
     } catch (err) {
       console.error('Failed to add product in Firestore:', err);
       handleFirestoreError(err, OperationType.CREATE, `products/${cleanedProduct.id}`);
@@ -893,7 +903,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, 'tiktok_reels', updated.id);
-      await setDoc(docRef, updated);
+      await setDoc(docRef, sanitizeForFirestore(updated));
     } catch (err) {
       console.error('Failed to update reel in Firestore:', err);
       handleFirestoreError(err, OperationType.UPDATE, `tiktok_reels/${updated.id}`);
@@ -911,7 +921,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, 'tiktok_reels', newReel.id);
-      await setDoc(docRef, newReel);
+      await setDoc(docRef, sanitizeForFirestore(newReel));
     } catch (err) {
       console.error('Failed to add reel to Firestore:', err);
       handleFirestoreError(err, OperationType.CREATE, `tiktok_reels/${newReel.id}`);
@@ -944,16 +954,37 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const craftDocRef = doc(db, 'store_settings', 'craft_story');
-      await setDoc(craftDocRef, newData, { merge: true });
+      await setDoc(craftDocRef, sanitizeForFirestore(newData), { merge: true });
     } catch (err) {
       console.error('Failed to update craft story in Firestore:', err);
       handleFirestoreError(err, OperationType.WRITE, 'store_settings/craft_story');
     }
   };
 
+  const cleanInstagramItemForFirestore = (item: InstagramJournalItem): Record<string, any> => {
+    const docData: Record<string, any> = {
+      id: item.id,
+      title: item.title || '',
+      caption: item.caption || '',
+      thumbnail: item.thumbnail || '',
+      postUrl: item.postUrl || '',
+      handle: item.handle || '@artified_np',
+    };
+    if (item.videoUrl && item.videoUrl.trim()) {
+      docData.videoUrl = item.videoUrl.trim();
+    }
+    if (item.taggedProductId && item.taggedProductId.trim()) {
+      docData.taggedProductId = item.taggedProductId.trim();
+      docData.taggedProductName = item.taggedProductName || '';
+      docData.taggedProductPrice = Number(item.taggedProductPrice) || 0;
+    }
+    return docData;
+  };
+
   const updateInstagramItem = async (updated: InstagramJournalItem) => {
+    const cleaned = cleanInstagramItemForFirestore(updated) as InstagramJournalItem;
     setInstagramItems((prev) => {
-      const next = prev.map((item) => (item.id === updated.id ? updated : item));
+      const next = prev.map((item) => (item.id === updated.id ? cleaned : item));
       try {
         localStorage.setItem('artified_instagram_journal_items', JSON.stringify(next));
       } catch {}
@@ -962,7 +993,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, 'instagram_journal', updated.id);
-      await setDoc(docRef, updated);
+      await setDoc(docRef, sanitizeForFirestore(cleaned));
     } catch (err) {
       console.error('Failed to update Instagram item in Firestore:', err);
       handleFirestoreError(err, OperationType.UPDATE, `instagram_journal/${updated.id}`);
@@ -970,8 +1001,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addInstagramItem = async (newItem: InstagramJournalItem) => {
+    const cleaned = cleanInstagramItemForFirestore(newItem) as InstagramJournalItem;
     setInstagramItems((prev) => {
-      const next = [newItem, ...prev];
+      const next = [cleaned, ...prev];
       try {
         localStorage.setItem('artified_instagram_journal_items', JSON.stringify(next));
       } catch {}
@@ -980,7 +1012,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const docRef = doc(db, 'instagram_journal', newItem.id);
-      await setDoc(docRef, newItem);
+      await setDoc(docRef, sanitizeForFirestore(cleaned));
     } catch (err) {
       console.error('Failed to add Instagram item to Firestore:', err);
       handleFirestoreError(err, OperationType.CREATE, `instagram_journal/${newItem.id}`);
