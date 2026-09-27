@@ -208,10 +208,20 @@ export const InstagramManageModal: React.FC = () => {
       }
       setThumbnail(coverImage);
       setInstagramFetchMessage(result.source === 'instagram-embed'
-        ? 'Instagram’s player is available. Its public embed did not expose caption or video files; the headline uses a safe fallback.'
+        ? (metadata.image
+          ? 'Instagram provided a preview image, but not the caption or video file.'
+          : 'Instagram returned only an embed for this post. It did not provide a cover image or video file, so an automatic cover could not be created.')
         : result.source === 'instagram-public-page'
-          ? 'Fetched the post details Instagram exposed. A cover frame is created when Instagram provides a video stream.'
-          : 'Fetched this post from the connected Instagram account.');
+          ? (coverImage
+            ? 'Fetched the post details Instagram exposed and selected its cover image.'
+            : 'Fetched the post details Instagram exposed, but it did not include a cover image or video stream to create one from.')
+          : result.source === 'instagram-public-resolver'
+            ? (metadata.video
+              ? (coverImage
+                ? 'Fetched the post caption and video, selected a cover, and enabled muted hover playback on its journal card.'
+                : 'Fetched the post caption and video, but could not create a cover image from its video.')
+              : (coverImage ? 'Fetched the post details and selected its cover image.' : 'Fetched the post details, but Instagram did not expose a cover image or video.'))
+            : (coverImage ? 'Fetched this post from the connected Instagram account and selected its cover image.' : 'Fetched this post from the connected Instagram account, but it did not provide a cover image or video.'));
     } finally {
       setIsGeneratingDetails(false);
     }

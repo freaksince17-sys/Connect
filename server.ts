@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { instagramGetUrl } from 'instagram-url-direct';
 import { PRODUCTS } from './src/data/products';
 
 const instagramOAuthStates = new Map<string, number>();
@@ -126,6 +127,20 @@ const parsePublicInstagramMetadata = (html: string) => {
     thumbnail,
     video: safeInstagramMediaUrl(video),
   };
+};
+
+const resolvePublicInstagramMetadata = async (postUrl: string) => {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      instagramGetUrl(postUrl, { retries: 0, delay: 500 }),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error('Instagram media lookup timed out.')), 9000);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 };
 
 const cacheInstagramVideo = async (videoUrl: string, shortcode: string, postUrl: string): Promise<string> => {
@@ -401,6 +416,40 @@ async function startServer() {
           const candidate = result.paging?.next;
           nextUrl = candidate?.startsWith(`https://${graphHost}/`) ? candidate : null;
         }
+      }
+
+      // Instagram's public embed normally only gives us an iframe. Try the
+      // public media resolver so a public Reel can provide a direct MP4 for
+      // native muted hover playback in the journal.
+      try {
+        const resolved = await resolvePublicInstagramMetadata(parsedUrl.toString());
+        const media = Array.isArray(resolved.media_details) ? resolved.media_details : [];
+        const videoMedia = media.find((entry) => entry.type === 'video');
+        const imageMedia = media.find((entry) => entry.type === 'image');
+        const sourceVideo = videoMedia?.url || '';
+        const image = videoMedia?.thumbnail || imageMedia?.url || '';
+        const caption = resolved.post_info?.caption || '';
+        const title = caption.split(/\r?\n/).map((line) => line.trim()).find(Boolean) || '';
+        if (sourceVideo || image || caption) {
+          const shortcode = requestedPath.split('/')[2];
+          const video = sourceVideo ? (await cacheInstagramVideo(sourceVideo, shortcode, parsedUrl.toString())) || sourceVideo : '';
+          const username = resolved.post_info?.owner_username || '';
+          return res.json({
+            success: true,
+            title: title.replace(/#[\w.]+/g, '').trim().slice(0, 120),
+            caption,
+            handle: username ? `@${username}` : '',
+            image,
+            thumbnail: image,
+            video,
+            videoUrl: video,
+            embedUrl: `https://www.instagram.com${requestedPath}/embed/`,
+            source: 'instagram-public-resolver',
+          });
+        }
+      } catch {
+        // Instagram may rate-limit or change the public resolver response;
+        // fall through to the public page and official embed.
       }
 
       // Public post pages often expose Open Graph fields for link previews.
