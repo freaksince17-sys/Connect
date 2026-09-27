@@ -307,7 +307,7 @@ export const ProductGrid: React.FC = () => {
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 lg:gap-3 relative z-0 isolate">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} quickViewProducts={filteredProducts} />
           ))}
         </div>
       ) : (

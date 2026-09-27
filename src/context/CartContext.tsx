@@ -61,7 +61,8 @@ interface CartContextType {
   toggleWishlist: (productId: string) => void;
   isWishlisted: (productId: string) => boolean;
   quickViewProduct: Product | null;
-  setQuickViewProduct: (product: Product | null) => void;
+  quickViewProducts: Product[];
+  setQuickViewProduct: (product: Product | null, productList?: Product[]) => void;
   activeReel: TikTokReel | null;
   setActiveReel: (reel: TikTokReel | null) => void;
   searchQuery: string;
@@ -89,6 +90,8 @@ interface CartContextType {
   setIsSellerModalOpen: (val: boolean) => void;
   isCatalogListOpen: boolean;
   setIsCatalogListOpen: (val: boolean) => void;
+  isReviewManagerOpen: boolean;
+  setIsReviewManagerOpen: (val: boolean) => void;
   editingProduct: Product | null;
   setEditingProduct: (product: Product | null) => void;
   openProductEditor: (product?: Product | null) => void;
@@ -143,6 +146,7 @@ interface CartContextType {
   setBestsellerThreshold: (val: number) => void;
   recordOnlineOrderSales: (items: CartItem[]) => Promise<void>;
   addProductReview: (productId: string, review: ProductReviewItem) => Promise<void>;
+  saveProductReviews: (reviewsByProduct: Record<string, ProductReviewItem[]>) => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -210,7 +214,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isWishlistOpen, setIsWishlistOpen] = useState<boolean>(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState<boolean>(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string>('');
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [quickViewProduct, setQuickViewProductState] = useState<Product | null>(null);
+  const [quickViewProducts, setQuickViewProducts] = useState<Product[]>([]);
   const [activeReel, setActiveReel] = useState<TikTokReel | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -309,6 +314,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return PRODUCTS;
     }
   });
+
+  const setQuickViewProduct = (product: Product | null, productList?: Product[]) => {
+    if (!product) {
+      setQuickViewProductState(null);
+      setQuickViewProducts([]);
+      return;
+    }
+
+    const currentListContainsProduct = quickViewProducts.some((item) => item.id === product.id);
+    const sourceList = productList || (currentListContainsProduct ? quickViewProducts : products);
+    setQuickViewProductState(product);
+    setQuickViewProducts(
+      sourceList.some((item) => item.id === product.id)
+        ? sourceList.map((item) => item.id === product.id ? product : item)
+        : [...sourceList, product]
+    );
+  };
 
   const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
   const [syncStatusText, setSyncStatusText] = useState<string>('Connecting to live cloud...');
@@ -423,6 +445,62 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (e) {
       console.error('Error saving review:', e);
+    }
+  };
+
+  // Save complete seller-managed review lists, including edits and intentional deletions.
+  const saveProductReviews = async (reviewsByProduct: Record<string, ProductReviewItem[]>): Promise<boolean> => {
+    const updates = new Map<string, ProductReviewItem[]>(
+      Object.entries(reviewsByProduct).map(([productId, reviews]) => [
+        productId,
+        reviews.map((review) => ({
+          ...review,
+          author: review.author.trim(),
+          location: review.location.trim(),
+          comment: review.comment.trim(),
+          rating: Math.min(5, Math.max(1, Number(review.rating) || 1))
+        }))
+      ] as [string, ProductReviewItem[]])
+    );
+    const updatedProducts = products.map((product) => {
+      const reviews = updates.get(product.id);
+      return reviews
+        ? {
+            ...product,
+            customReviews: reviews,
+            reviewsManaged: true,
+            rating: reviews.length
+              ? Math.round((reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length) * 10) / 10
+              : 0
+          }
+        : product;
+    });
+
+    setProducts(updatedProducts);
+    try {
+      localStorage.setItem('artified_products_custom', JSON.stringify(updatedProducts));
+      localStorage.setItem('artified_products_v3', JSON.stringify(updatedProducts));
+    } catch (error) {
+      console.warn('Could not save review edits to this device:', error);
+    }
+
+    if (quickViewProduct && updates.has(quickViewProduct.id)) {
+      const updatedQuickView = updatedProducts.find((product) => product.id === quickViewProduct.id);
+      if (updatedQuickView) setQuickViewProduct(updatedQuickView);
+    }
+
+    try {
+      const batch = writeBatch(db);
+      for (const product of updatedProducts) {
+        if (updates.has(product.id)) {
+          batch.set(doc(db, 'products', product.id), sanitizeForFirestore(product), { merge: true });
+        }
+      }
+      await batch.commit();
+      return true;
+    } catch (cloudErr) {
+      console.warn('Review edits saved on this device; cloud sync failed:', cloudErr);
+      return false;
     }
   };
 
@@ -686,6 +764,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isSellerAuthModalOpen, setIsSellerAuthModalOpen] = useState<boolean>(false);
   const [isSellerModalOpen, setIsSellerModalOpen] = useState<boolean>(false);
   const [isCatalogListOpen, setIsCatalogListOpen] = useState<boolean>(false);
+  const [isReviewManagerOpen, setIsReviewManagerOpen] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const setIsSellerMode = (val: boolean) => {
@@ -1281,6 +1360,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleWishlist,
         isWishlisted,
         quickViewProduct,
+        quickViewProducts,
         setQuickViewProduct,
         activeReel,
         setActiveReel,
@@ -1309,6 +1389,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsSellerModalOpen,
         isCatalogListOpen,
         setIsCatalogListOpen,
+        isReviewManagerOpen,
+        setIsReviewManagerOpen,
         editingProduct,
         setEditingProduct,
         openProductEditor,
@@ -1363,6 +1445,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setBestsellerThreshold,
         recordOnlineOrderSales,
         addProductReview,
+        saveProductReviews,
       }}
     >
       {children}

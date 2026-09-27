@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Star, 
@@ -10,8 +10,10 @@ import {
   Clock, 
   Sparkles, 
   Check, 
+  ChevronLeft,
   ChevronDown, 
   ChevronUp, 
+  ChevronRight,
   Heart,
   ZoomIn,
   Edit3,
@@ -25,6 +27,7 @@ import { ProductReviewItem } from '../types';
 export const ProductDetailModal: React.FC = () => {
   const { 
     quickViewProduct, 
+    quickViewProducts,
     setQuickViewProduct, 
     addToCart, 
     toggleWishlist, 
@@ -64,6 +67,45 @@ export const ProductDetailModal: React.FC = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const [zoomScale, setZoomScale] = useState(2.4);
+  const modalBodyRef = useRef<HTMLDivElement | null>(null);
+  const setQuickViewProductRef = useRef(setQuickViewProduct);
+  setQuickViewProductRef.current = setQuickViewProduct;
+  const quickViewProductIndex = quickViewProduct
+    ? quickViewProducts.findIndex((item) => item.id === quickViewProduct.id)
+    : -1;
+
+  const navigateProduct = (direction: -1 | 1) => {
+    const nextProduct = quickViewProducts[quickViewProductIndex + direction];
+    if (nextProduct) setQuickViewProduct(nextProduct, quickViewProducts);
+  };
+
+  useEffect(() => {
+    if (!quickViewProduct || quickViewProducts.length < 2) return;
+
+    const handleProductArrowKeys = (event: KeyboardEvent) => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.matches('input, textarea, select, [contenteditable="true"]')) return;
+
+      if (event.key === 'ArrowLeft' && quickViewProductIndex > 0) {
+        event.preventDefault();
+        setQuickViewProductRef.current(quickViewProducts[quickViewProductIndex - 1], quickViewProducts);
+      } else if (event.key === 'ArrowRight' && quickViewProductIndex < quickViewProducts.length - 1) {
+        event.preventDefault();
+        setQuickViewProductRef.current(quickViewProducts[quickViewProductIndex + 1], quickViewProducts);
+      }
+    };
+
+    window.addEventListener('keydown', handleProductArrowKeys);
+    return () => window.removeEventListener('keydown', handleProductArrowKeys);
+  }, [quickViewProduct?.id, quickViewProducts, quickViewProductIndex]);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    setQuantity(1);
+    setAddedSuccess(false);
+    modalBodyRef.current?.scrollTo({ top: 0 });
+  }, [quickViewProduct?.id]);
 
   // Reset zoom whenever image changes
   useEffect(() => {
@@ -164,20 +206,52 @@ export const ProductDetailModal: React.FC = () => {
         onClick={() => setQuickViewProduct(null)}
       />
 
-      {/* Modal Dialog */}
-      <div className="relative bg-[#FAF8F5] w-full max-w-4xl rounded-2xl shadow-2xl border border-[#E8DFD8] overflow-hidden z-10 flex flex-col max-h-[92vh]">
+      {quickViewProducts.length > 1 && quickViewProductIndex >= 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => navigateProduct(-1)}
+            disabled={quickViewProductIndex === 0}
+            className="fixed left-2 top-1/2 -translate-y-1/2 z-[60] flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border-2 border-[#C5A880] bg-[#FFFDF9] text-[#7A5E3B] shadow-[0_4px_18px_rgba(28,27,26,0.28)] transition-all duration-200 enabled:hover:scale-110 enabled:hover:border-[#D4AF37] enabled:hover:bg-[#C5A880] enabled:hover:text-[#1C1B1A] enabled:hover:shadow-[0_0_24px_8px_rgba(212,175,55,0.65)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-75"
+            aria-label="Previous product"
+            title="Previous product (←)"
+          >
+            <ChevronLeft className="h-7 w-7" strokeWidth={2.25} />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateProduct(1)}
+            disabled={quickViewProductIndex === quickViewProducts.length - 1}
+            className="fixed right-2 top-1/2 -translate-y-1/2 z-[60] flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border-2 border-[#C5A880] bg-[#FFFDF9] text-[#7A5E3B] shadow-[0_4px_18px_rgba(28,27,26,0.28)] transition-all duration-200 enabled:hover:scale-110 enabled:hover:border-[#D4AF37] enabled:hover:bg-[#C5A880] enabled:hover:text-[#1C1B1A] enabled:hover:shadow-[0_0_24px_8px_rgba(212,175,55,0.65)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/40 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-75"
+            aria-label="Next product"
+            title="Next product (→)"
+          >
+            <ChevronRight className="h-7 w-7" strokeWidth={2.25} />
+          </button>
+        </>
+      )}
+
+      {/* Modal and floating product navigation */}
+      <div className="relative w-full max-w-4xl overflow-visible z-10">
+      <div className="relative bg-[#FAF8F5] w-full max-w-4xl rounded-2xl shadow-2xl border border-[#E8DFD8] overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Top Header with Close and Title */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8DFD8] bg-white sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#8C7A6B]">
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-4 border-b border-[#E8DFD8] bg-white sticky top-0 z-20">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="hidden sm:inline text-[11px] font-semibold tracking-[0.2em] uppercase text-[#8C7A6B]">
               Artified_np Handmade Piece
             </span>
-            <span className="text-[#C5A880]">•</span>
-            <span className="text-xs text-[#736C65] capitalize">{product.category.replace('-', ' ')}</span>
+            <span className="hidden sm:inline text-[#C5A880]">•</span>
+            <span className="text-xs text-[#736C65] capitalize truncate max-w-28">{product.category.replace('-', ' ')}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {quickViewProducts.length > 1 && quickViewProductIndex >= 0 && (
+              <span className="min-w-[2.5rem] text-center text-[10px] tabular-nums text-[#736C65] mr-1" aria-live="polite">
+                {quickViewProductIndex + 1} / {quickViewProducts.length}
+              </span>
+            )}
+
             {isSellerMode && (
               <button
                 type="button"
@@ -192,7 +266,7 @@ export const ProductDetailModal: React.FC = () => {
 
             <button
               onClick={() => toggleWishlist(product.id)}
-              className={`p-2 rounded-full border border-[#E8DFD8] transition-colors ${
+                className={`p-1.5 sm:p-2 rounded-full border border-[#E8DFD8] transition-colors ${
                 wishlisted ? 'bg-rose-50 text-rose-500 border-rose-200' : 'text-[#736C65] hover:text-[#1C1B1A]'
               }`}
               title={wishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
@@ -201,7 +275,7 @@ export const ProductDetailModal: React.FC = () => {
             </button>
             <button
               onClick={() => setQuickViewProduct(null)}
-              className="p-2 rounded-full border border-[#E8DFD8] text-[#736C65] hover:text-[#1C1B1A] hover:bg-[#FAF8F5] transition-colors"
+              className="p-1.5 sm:p-2 rounded-full border border-[#E8DFD8] text-[#736C65] hover:text-[#1C1B1A] hover:bg-[#FAF8F5] transition-colors"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -210,7 +284,7 @@ export const ProductDetailModal: React.FC = () => {
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="overflow-y-auto p-4 sm:p-6 md:p-8 flex-1">
+        <div ref={modalBodyRef} className="overflow-y-auto p-4 sm:p-6 md:p-8 flex-1">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             
             {/* Left: Gallery Column */}
@@ -703,6 +777,7 @@ export const ProductDetailModal: React.FC = () => {
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   );

@@ -513,6 +513,11 @@ export function sanitizeReviewItem<T extends { location?: string; comment?: stri
 export function getProductReviews(product: Product): ProductReviewItem[] {
   let list: ProductReviewItem[] = [];
 
+  // Seller-managed lists are the complete source, including intentionally empty lists.
+  if (product.reviewsManaged) {
+    return product.customReviews || [];
+  }
+
   // 1. Direct match in curated map
   const curated = PRODUCT_REVIEWS_MAP[product.id];
   if (curated) {

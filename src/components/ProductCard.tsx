@@ -6,9 +6,10 @@ import { calculateTotalSold, isProductBestSeller, calculateReviewsCount } from '
 
 interface ProductCardProps {
   product: Product;
+  quickViewProducts?: Product[];
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, quickViewProducts }) => {
   const { 
     addToCart, 
     toggleWishlist, 
@@ -43,7 +44,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleQuickView = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setQuickViewProduct(product);
+    setQuickViewProduct(product, quickViewProducts);
   };
 
   const fallbackByCategory: Record<string, string> = {
@@ -80,7 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   return (
     <div
-      onClick={() => setQuickViewProduct(product)}
+      onClick={() => setQuickViewProduct(product, quickViewProducts)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="group relative flex flex-col bg-white rounded-lg overflow-hidden border border-[#E5E7EB] hover:border-[#C5A880] transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer z-0"

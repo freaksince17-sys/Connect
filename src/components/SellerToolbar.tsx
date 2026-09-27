@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Plus, Lock, ChevronUp, ChevronDown, RotateCcw, Package, Check, Layers, Video, Feather, Instagram } from 'lucide-react';
+import { Sparkles, Plus, Lock, ChevronUp, ChevronDown, RotateCcw, Package, Check, Layers, Video, Feather, Instagram, MessageSquare } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export const SellerToolbar: React.FC = () => {
@@ -10,6 +10,7 @@ export const SellerToolbar: React.FC = () => {
     openProductEditor,
     resetProductsToDefault,
     setIsCatalogListOpen,
+    setIsReviewManagerOpen,
     reels,
     openTikTokEditor,
     instagramItems,
@@ -86,6 +87,15 @@ export const SellerToolbar: React.FC = () => {
             >
               <Layers className="w-4 h-4 text-[#C5A880]" />
               <span>Manage All Products ({products.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsReviewManagerOpen(true)}
+              className="w-full py-2.5 px-3 bg-white/10 hover:bg-white/15 text-white text-xs font-medium rounded-xl flex items-center justify-center gap-2 transition-colors border border-white/10"
+            >
+              <MessageSquare className="w-4 h-4 text-[#D4AF37]" />
+              <span>Manage Product Reviews</span>
             </button>
 
             {/* Monthly Bestseller Threshold Quick Adjust */}

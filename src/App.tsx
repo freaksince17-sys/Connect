@@ -19,6 +19,7 @@ import { SellerAuthModal } from './components/SellerAuthModal';
 import { SellerToolbar } from './components/SellerToolbar';
 import { SellerProductModal } from './components/SellerProductModal';
 import { SellerCatalogListModal } from './components/SellerCatalogListModal';
+import { SellerReviewsModal } from './components/SellerReviewsModal';
 import { TikTokManageModal } from './components/TikTokManageModal';
 import { InstagramManageModal } from './components/InstagramManageModal';
 import { CraftStoryModal } from './components/CraftStoryModal';
@@ -51,6 +52,7 @@ export default function App() {
         {/* Seller Mode Modals & Floating Atelier Toolbar */}
         <SellerAuthModal />
         <SellerCatalogListModal />
+        <SellerReviewsModal />
         <SellerProductModal />
         <TikTokManageModal />
         <InstagramManageModal />

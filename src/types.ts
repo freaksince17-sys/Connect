@@ -10,6 +10,7 @@ export interface Product {
   soldCount?: number;
   onlineSalesCount?: number;
   customReviews?: ProductReviewItem[];
+  reviewsManaged?: boolean;
   isHandmade: boolean;
   isBestSeller?: boolean;
   isNewArrival?: boolean;
